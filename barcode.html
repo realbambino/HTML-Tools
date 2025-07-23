@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Barcode Generator</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 685px;
+      margin: auto;
+      background-color: #1e1e1e;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    h1 {
+      text-align: center;
+      color: #ffffff;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.5;
+    }
+    button {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #4caf50;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .download-btn {
+      background-color: #2196f3;
+    }
+    #svgContainer {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    #svgContainer svg {
+      background-color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 100%;
+      width: 600px;
+      height: auto;
+      display: block;
+      margin: auto;
+    }	
+	select#barcodeType {
+	  width: 175px;
+	}
+	div#barcodeInputWrapper {
+	  width: 669px;
+	}
+  </style>
+  <script src="https://unpkg.com/bwip-js/dist/bwip-js-min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Barcode Generator</h1>
+
+    <label for="barcodeType">Barcode Type:</label>
+    <select id="barcodeType" onchange="handleTypeChange()">
+      <option value="code128" selected>Code128</option>
+      <option value="pdf417">PDF417</option>
+      <option value="ean13">EAN-13</option>
+    </select>
+
+    <label for="barcodeData">Data to encode:</label>
+    <div id="barcodeInputWrapper">
+      <input type="text" id="barcodeData" placeholder="Enter text to encode" maxlength="100"/>
+    </div>
+
+    <button onclick="generateSVGBarcode()">Generate Barcode</button>
+
+    <div id="svgContainer"></div>
+
+    <button class="download-btn" onclick="downloadSVG()">Download SVG</button>
+  </div>
+
+  <script>
+    function handleTypeChange() {
+      const type = document.getElementById('barcodeType').value;
+      const wrapper = document.getElementById('barcodeInputWrapper');
+      const oldInput = document.getElementById('barcodeData');
+
+      // Preserve value from previous input
+      const value = oldInput.value;
+
+      // Create new input/textarea based on type
+      let newInput;
+      if (type === 'pdf417') {
+        newInput = document.createElement('textarea');
+        newInput.setAttribute('rows', '4');
+        newInput.setAttribute('placeholder', 'Enter multiline text to encode');
+        newInput.setAttribute('maxlength', '1000');
+      } else {
+        newInput = document.createElement('input');
+        newInput.setAttribute('type', 'text');
+        newInput.setAttribute('maxlength', type === 'ean13' ? '13' : '100');
+        newInput.setAttribute('placeholder', type === 'ean13' ? 'Enter 12 or 13 digits' : 'Enter text to encode');
+      }
+
+      newInput.setAttribute('id', 'barcodeData');
+      newInput.value = value;
+      newInput.style.width = '100%';
+
+      wrapper.innerHTML = '';
+      wrapper.appendChild(newInput);
+
+      // Add digit restriction for EAN-13
+      if (type === 'ean13') {
+        newInput.value = newInput.value.replace(/\D/g, '').substring(0, 13);
+        newInput.addEventListener('input', restrictToDigits);
+      }
+    }
+
+    function restrictToDigits(e) {
+      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 13);
+    }
+
+    function generateSVGBarcode() {
+      const type = document.getElementById('barcodeType').value;
+      const data = document.getElementById('barcodeData').value.trim();
+      const container = document.getElementById('svgContainer');
+      container.innerHTML = '';
+
+      if (!data) {
+        alert('Please enter data to encode.');
+        return;
+      }
+
+      if (type === 'ean13' && !/^\d{12,13}$/.test(data)) {
+        alert('EAN-13 requires 12 or 13 numeric digits.');
+        return;
+      }
+
+      try {
+        const svg = bwipjs.toSVG({
+          bcid: type,
+          text: data,
+          scale: 3,
+          includetext: true,
+          textxalign: 'center'
+        });
+
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = svg;
+        const svgEl = wrapper.querySelector('svg');
+        svgEl.setAttribute('id', 'barcodeSVG');
+        svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgEl.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        svgEl.setAttribute('width', '600');
+        svgEl.setAttribute('style', 'max-width: 100%; height: auto; display: block; margin: auto; background-color: white; border-radius: 8px; padding: 10px;');
+
+        container.appendChild(svgEl);
+      } catch (e) {
+        alert('Error generating barcode: ' + e.message);
+      }
+    }
+
+    function downloadSVG() {
+      const svg = document.getElementById('barcodeSVG');
+      if (!svg) {
+        alert('Please generate a barcode first.');
+        return;
+      }
+
+      const serializer = new XMLSerializer();
+      const source = serializer.serializeToString(svg);
+      const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      const type = document.getElementById('barcodeType').value;
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      const filename = `barcode_${type}_${hh}${mm}${ss}.svg`.toLowerCase();
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    window.onload = handleTypeChange;
+  </script>
+</body>
+</html>
