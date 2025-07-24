@@ -112,9 +112,9 @@
 
     <div id="wifiInput" style="display:none;">
       <label for="ssid">Network Name (SSID):</label>
-      <input type="text" id="ssid" />
+      <input type="text" id="ssid" placeholder="Enter SSID here..."/>
       <label for="password">Password:</label>
-      <input type="text" id="password" />
+      <input type="text" id="password" placeholder="Enter password here..."/>
       <label for="encryption">Security Type:</label>
       <select id="encryption">
         <option value="WPA" selected>WPA/WPA2</option>
@@ -125,26 +125,26 @@
 
     <div id="mecardInput" style="display:none;">
       <label for="fullname">Full Name:</label>
-      <input type="text" id="fullname" />
+      <input type="text" id="fullname" placeholder="Enter full name here..."/>
       <label for="email">Email Address:</label>
-      <input type="text" id="email" />
+      <input type="text" id="email" placeholder="Enter email here..."/>
       <label for="phone">Phone Number:</label>
-      <input type="text" id="phone" />
+      <input type="text" id="phone" placeholder="Enter email here..."/>
       <label for="company">Company:</label>
-      <input type="text" id="company" />
+      <input type="text" id="company" placeholder="Enter company here..."/>
     </div>
 
     <div id="eventInput" style="display:none;">
       <label for="eventTitle">Event Title:</label>
-      <input type="text" id="eventTitle" />
+      <input type="text" id="eventTitle" placeholder="Enter Title here..."/>
       <label for="eventStart">Start Date & Time:</label>
       <input type="datetime-local" id="eventStart" />
       <label for="eventEnd">End Date & Time:</label>
       <input type="datetime-local" id="eventEnd" />
       <label for="eventLocation">Location:</label>
-      <input type="text" id="eventLocation" />
+      <input type="text" id="eventLocation" placeholder="Enter location here..."/>
       <label for="eventDescription">Description:</label>
-      <textarea id="eventDescription"></textarea>
+      <textarea id="eventDescription" placeholder="Enter description here..."></textarea>
     </div>
 
     <button onclick="generateQRCode()">Generate QR Code</button>
