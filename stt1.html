@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Tracker</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 16px;
+    }
+    .frame {
+      border: 2px solid #444;
+      border-radius: 16px;
+      padding: 20px;
+      background-color: #1e1e1e;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    button {
+      padding: 10px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      width: 160px;
+    }
+    #startBtn { background-color: #2ecc71; color: black; }
+    #startBtn:hover { background-color: #27ae60; }
+
+    #stopBtn { background-color: #e74c3c; color: white; }
+    #stopBtn:hover { background-color: #c0392b; }
+
+    .button-group, .break-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .break-buttons button {
+      background-color: #3498db;
+      color: white;
+    }
+    .break-buttons button:hover {
+      background-color: #2980b9;
+    }
+
+    .labels-frame {
+      width: 100%;
+      border: 1px solid #444;
+      border-radius: 12px;
+      background-color: #1e1e1e;
+      padding: 12px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    hr {
+      border: 0;
+      height: 1px;
+      background-color: #444;
+      margin: 10px 0;
+      width: 90%;
+    }
+    .error {
+      color: #ff4d4d;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #totalLabel {
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    #workingTimeLabel {
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    .bold { font-weight: bold; }
+    .bold-white { font-weight: bold; color: white; }
+    .green { color: #2ecc71; font-weight: bold; }
+    .light-red { color: #e74c3c; font-weight: bold; }
+    .medium-dark-orange { color: #d35400; font-weight: 500; }
+    .light-dark-yellow { color: #f1c40f; font-weight: 500; }
+    .gray { color: #aaaaaa; }
+    .tangerine-orange { color: #ff7f50; font-weight: 500; }
+    .lighter-orange { color: #f39c12; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="button-group">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+
+    <div class="break-buttons">
+      <button id="breakStartBtn">Break Start</button>
+      <button id="breakEndBtn">Break End</button>
+    </div>
+
+    <div class="labels-frame" id="output">
+      <div id="startLabel">Wanna be startin' something?</div>
+      <div id="stopLabel"></div>
+      <hr id="breakDivider" style="display:none;">
+      <div id="breakStartLabel"></div>
+      <div id="breakEndLabel"></div>
+      <div id="errorMessage" class="error"></div>
+    </div>
+
+    <div id="totalLabel"></div>
+    <hr id="workingHr" style="display:none; width:90%;">
+    <div id="workingTimeLabel"></div>
+  </div>
+
+  <script>
+    let startTime = null;
+    let stopTime = null;
+
+    let breakStartTime = null;
+    let breakEndTime = null;
+
+    function formatTime(timestamp) {
+      const date = new Date(timestamp * 1000);
+      const dateStr = date.toLocaleDateString();
+      const timeStr = date.toLocaleTimeString([], { hour12: false });
+      return `<span class='gray'>(</span><span class='tangerine-orange'>${dateStr}</span><span class='gray'>,</span> <span class='lighter-orange'>${timeStr}</span><span class='gray'>)</span>`;
+    }
+
+    function formatDuration(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function clearError() {
+      document.getElementById('errorMessage').innerHTML = '';
+    }
+
+    function updateTotalLabel() {
+      if (startTime === null || stopTime === null) return;
+      const total = stopTime - startTime;
+      const totalFormatted = formatDuration(total);
+      let breakTimeFormatted = '0:00:00';
+      if (breakStartTime !== null && breakEndTime !== null) {
+        const breakDuration = breakEndTime - breakStartTime;
+        breakTimeFormatted = formatDuration(breakDuration);
+      }
+      document.getElementById('totalLabel').innerHTML = `<span class='bold-white'>Total Time:</span> <span class='light-dark-yellow'>${totalFormatted}</span> <span class='gray'>|</span> <span class='bold-white'>Break Time:</span> <span class='light-dark-yellow'>${breakTimeFormatted}</span>`;
+
+      document.getElementById('workingHr').style.display = 'block';
+      const workingTime = total - (breakStartTime && breakEndTime ? (breakEndTime - breakStartTime) : 0);
+      const workingFormatted = formatDuration(workingTime);
+      document.getElementById('workingTimeLabel').innerHTML = `Working Time: ${workingFormatted}`;
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      startTime = Math.floor(Date.now() / 1000);
+      const formatted = formatTime(startTime);
+      document.getElementById('startLabel').innerHTML = `<span class='bold'>Start Time:</span> <span class='green'>${startTime}</span> ${formatted}`;
+      document.getElementById('stopLabel').innerHTML = '';
+      document.getElementById('breakDivider').style.display = 'none';
+      document.getElementById('totalLabel').innerHTML = '';
+      document.getElementById('workingHr').style.display = 'none';
+      document.getElementById('workingTimeLabel').innerHTML = '';
+      breakStartTime = null;
+      breakEndTime = null;
+      clearError();
+    });
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      if (startTime === null) return;
+      stopTime = Math.floor(Date.now() / 1000);
+      const formatted = formatTime(stopTime);
+      document.getElementById('stopLabel').innerHTML = `<span class='bold'>End Time:</span> <span class='light-red'>${stopTime}</span> ${formatted}`;
+      updateTotalLabel();
+      clearError();
+    });
+
+    document.getElementById('breakStartBtn').addEventListener('click', () => {
+      if (startTime === null) {
+        document.getElementById('errorMessage').innerHTML = 'Error: Please start working first!';
+        return;
+      }
+      breakStartTime = Math.floor(Date.now() / 1000);
+      const formatted = formatTime(breakStartTime);
+      document.getElementById('breakDivider').style.display = 'block';
+      document.getElementById('breakStartLabel').innerHTML = `<span class='bold'>Break Start:</span> <span class='green'>${breakStartTime}</span> ${formatted}`;
+      document.getElementById('breakEndLabel').innerHTML = '';
+      clearError();
+    });
+
+    document.getElementById('breakEndBtn').addEventListener('click', () => {
+      if (breakStartTime === null) {
+        document.getElementById('errorMessage').innerHTML = 'Error: Please start your break first!';
+        return;
+      }
+      breakEndTime = Math.floor(Date.now() / 1000);
+      const formatted = formatTime(breakEndTime);
+      document.getElementById('breakEndLabel').innerHTML = `<span class='bold'>Break End:</span> <span class='light-red'>${breakEndTime}</span> ${formatted}`;
+      updateTotalLabel();
+      clearError();
+    });
+  </script>
+</body>
+</html>

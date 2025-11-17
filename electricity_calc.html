@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wattage Calculator</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Epunda+Slab&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Epunda Slab', serif;
+      font-weight: 400;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: transparent;
+      animation: fadeIn 1.2s ease-out;
+    }
+
+    /* Smooth fade-in for whole page */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #bgCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    h1 {
+      color: #ffffff;
+      font-size: 32pt;
+      margin-bottom: 20px;
+      text-shadow: 0 0 12px #00c6ff, 0 0 18px #00c6ff;
+      animation: glowIn 1.4s ease-out;
+    }
+
+    /* Neon title glow */
+    @keyframes glowIn {
+      from { opacity: 0; text-shadow: 0 0 0px transparent; }
+      to   { opacity: 1; text-shadow: 0 0 12px #00c6ff, 0 0 18px #00c6ff; }
+    }
+
+    .frame {
+      background: rgba(20, 20, 20, 0.55);
+      backdrop-filter: blur(10px) brightness(1.2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 20px;
+      border-radius: 15px;
+      width: 350px;
+      box-shadow: 0 0 20px rgba(0,255,255,0.25), 0 0 35px rgba(0,255,255,0.15);
+      animation: slideUp 1.2s ease-out;
+    }
+
+    /* Slide-up animation for glass panel */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(25px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+      font-size: 14pt;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background-color: rgba(30,30,30,0.8);
+      color: #e0e0e0;
+      transition: 0.25s;
+      backdrop-filter: blur(4px);
+    }
+
+    select:hover, input:hover {
+      border-color: #00c6ff;
+      box-shadow: 0 0 10px #00c6ff55;
+    }
+
+    input {
+      width: 330px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(90deg, #008cff, #00e6ff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 17px;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: 0.25s;
+      box-shadow: 0 0 10px #00e6ff55;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #00aaff, #00ffff);
+      box-shadow: 0 0 18px #00ffff88;
+    }
+
+    #result {
+      font-size: 14pt;
+      margin-top: 10px;
+      font-weight: normal;   /* requested: not bold */
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.7s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<h1>Wattage Calculator</h1>
+
+<div class="frame">
+
+  <label for="wattage">Wattage:</label>
+  <select id="wattage"></select>
+
+  <label for="kwh">kWh:</label>
+  <select id="kwh">
+    <option value="1352">R-1/TR 900 VA: Rp1.352/kWh</option>
+    <option value="1444.70">R-1/TR 1.300 VA: Rp1.444,70/kWh</option>
+    <option value="1444.70" selected>R-1/TR 2.200 VA: Rp1.444,70/kWh</option>
+    <option value="1699.53">R-2/TR 3.500-5.500 VA: Rp1.699,53/kWh</option>
+    <option value="1699.53">R-3/TR di atas 6.600 VA: Rp1.699,53/kWh</option>
+  </select>
+
+  <label for="usage">Usage:</label>
+  <select id="usage">
+    <option value="daily">Daily</option>
+    <option value="weekly">Weekly</option>
+    <option value="monthly">Monthly</option>
+  </select>
+
+  <label for="duration">Duration (minutes):</label>
+  <input type="number" id="duration" min="1" placeholder="Enter minutes">
+
+  <button id="calculateBtn">Calculate</button>
+
+  <div id="result"></div>
+</div>
+
+<script>
+/* ---------------- BACKGROUND CANVAS ---------------- */
+
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  drawGrayShapes();
+}
+
+function drawGrayShapes() {
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const gradient = ctx.createLinearGradient(0, 0, w, h);
+  gradient.addColorStop(0, '#050505');
+  gradient.addColorStop(1, '#151515');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
+
+  for (let i = 0; i < 80; i++) {
+    const x = Math.random() * w;
+    const y = Math.random() * h;
+    const size = Math.random() * 100 + 20;
+    const angle = Math.random() * Math.PI * 2;
+    const shade = Math.floor(Math.random() * 100);
+    const alpha = Math.random() * 0.15 + 0.05;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = `rgba(${shade}, ${shade}, ${shade}, ${alpha})`;
+
+    if (Math.random() < 0.5) {
+      ctx.fillRect(-size / 2, -size / 2, size, size);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(0, -size / 2);
+      ctx.lineTo(size / 2, size / 2);
+      ctx.lineTo(-size / 2, size / 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+/* ---------------- WATTAGE POPULATION ---------------- */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const wattSelect = document.getElementById('wattage');
+  wattSelect.innerHTML = "";
+
+  for (let i = 50; i <= 3500; i += 50) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${i} W`;
+    wattSelect.appendChild(opt);
+  }
+});
+
+/* ---------------- CALCULATION ---------------- */
+
+document.getElementById('calculateBtn').addEventListener('click', () => {
+  const watt = parseFloat(document.getElementById('wattage').value);
+  const rate = parseFloat(document.getElementById('kwh').value);
+  const usage = document.getElementById('usage').value;
+  const minutes = parseFloat(document.getElementById('duration').value);
+  const result = document.getElementById('result');
+
+  if (!minutes || minutes <= 0) {
+    result.textContent = "Please enter a valid duration.";
+    result.style.opacity = 1;
+    return;
+  }
+
+  const occurrences =
+      usage === 'daily' ? 30 :
+      usage === 'weekly' ? 4 :
+                           1;
+
+  const kwhUsed = (watt / 1000) * (minutes / 60) * occurrences;
+  const totalCost = kwhUsed * rate;
+
+  result.innerHTML = `
+    <span style="color:white;">Monthly cost for</span>
+    <span style="color:#00ff99;">${minutes} minute(s)</span>
+    <span style="color:white;">per</span>
+    <span style="color:#ffa133;">
+      ${usage === 'daily' ? 'day' : usage === 'weekly' ? 'week' : 'month'}:
+    </span><br>
+    <span style="color:#ffeb3b;">
+      Rp ${totalCost.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    </span>
+    `;
+
+  result.style.opacity = 1;
+});
+</script>
+
+</body>
+</html>
